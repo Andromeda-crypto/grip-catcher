@@ -1,0 +1,52 @@
+<mujoco model="pendulum">
+  <compiler angle="degree"/>
+  <option timestep="0.002" gravity="0 0 -9.81"/>
+
+  <statistic center="0 0 0.6" extent="1.3"/>
+
+  <visual>
+    <headlight ambient="0.4 0.4 0.4"/>
+  </visual>
+
+  <worldbody>
+    <light pos="0 -1 3" dir="0 0 -1"/>
+
+    <geom name="floor"
+          type="plane"
+          size="1 1 0.1"
+          rgba="0.25 0.30 0.35 1"/>
+
+    <geom name="support"
+          type="capsule"
+          fromto="0 0.12 0 0 0.12 1.1"
+          size="0.025"
+          rgba="0.6 0.6 0.6 1"/>
+
+    <geom name="pivot"
+          type="sphere"
+          pos="0 0 1.1"
+          size="0.035"
+          rgba="0.85 0.85 0.85 1"/>
+
+    <body name="pendulum" pos="0 0 1.1">
+      <joint name="pivot_joint"
+             type="hinge"
+             axis="0 1 0"
+             damping="0.015"/>
+
+      <geom name="rod"
+            type="capsule"
+            fromto="0 0 0 0.35 0 -0.45"
+            size="0.018"
+            mass="0.08"
+            rgba="0.2 0.65 0.95 1"/>
+
+      <geom name="bob"
+            type="sphere"
+            pos="0.35 0 -0.45"
+            size="0.055"
+            mass="0.15"
+            rgba="0.95 0.55 0.15 1"/>
+    </body>
+  </worldbody>
+</mujoco>

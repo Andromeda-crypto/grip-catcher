@@ -1,0 +1,23 @@
+<mujoco model="falling_ball">
+	<compiler angle="radian" autolimits="true"/>
+	<option timestep="0.002" gravity="0 0 -9.81" integrator="implicitfast"/>
+
+	<visual>
+		<headlight diffuse="0.8 0.8 0.8" ambient="0.25 0.25 0.25" specular="0.1 0.1 0.1"/>
+	</visual>
+
+	<asset>
+		<texture name="floor_grid" type="2d" builtin="checker" rgb1="0.82 0.84 0.86" rgb2="0.94 0.95 0.96" width="512" height="512"/>
+		<material name="floor_material" texture="floor_grid" texrepeat="6 6" texuniform="true" reflectance="0.08"/>
+	</asset>
+
+	<worldbody>
+		<light name="overhead" pos="0 -2 5" dir="0 0 -1" diffuse="0.8 0.8 0.8" specular="0.2 0.2 0.2"/>
+		<geom name="ground" type="plane" size="5 5 0.1" material="floor_material"/>
+
+		<body name="ball" pos="0 0 2">
+			<freejoint name="ball_free"/>
+			<geom name="ball_geom" type="sphere" size="0.2" density="700" friction="0.8 0.02 0.002" rgba="0.92 0.28 0.12 1"/>
+		</body>
+	</worldbody>
+</mujoco>
