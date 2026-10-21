@@ -1,0 +1,30 @@
+<mujoco model="MK-II_Quad_Arms">
+    <!-- Assets like materials (mimicking your bronze color) -->
+    <asset>
+        <material name="bronze" rgba="0.8 0.5 0.2 1.0"/>
+    </asset>
+
+    <worldbody>
+        <!-- A floor to stand on -->
+        <geom type="plane" size="5 5 0.1" rgba="0.9 0.9 0.9 1"/>
+        <light directional="true" pos="0 0 3" dir="0 0 -1"/>
+
+        <!-- The Robot Base (Using dimensions from your file: 100cm height, 40kg weight) -->
+        <body name="torso" pos="0 0 1.0">
+            <freejoint name="root"/>
+            <!-- Approximate torso shape matching your height/width specifications -->
+            <geom type="capsule" size="0.2 0.4" mass="40" material="bronze"/>
+            
+            <!-- You would then build out the 2 legs and 4 arms using nested <body> and <joint> tags -->
+            <body name="left_leg" pos="-0.2 0 -0.4">
+                <joint name="left_hip" type="hinge" axis="0 1 0"/>
+                <geom type="capsule" size="0.05 0.2" mass="5"/>
+            </body>
+            
+            <body name="right_leg" pos="0.2 0 -0.4">
+                <joint name="right_hip" type="hinge" axis="0 1 0"/>
+                <geom type="capsule" size="0.05 0.2" mass="5"/>
+            </body>
+         </body>
+    </worldbody>
+</mujoco>

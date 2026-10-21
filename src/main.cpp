@@ -81,7 +81,7 @@ void scroll(GLFWwindow *window, double xoffset, double yoffset)
     mjv_moveCamera(m, mjMOUSE_ZOOM, 0, -0.05 * yoffset, &cam);
 }
 
-int main()
+int main(int argc, char **argv)
 {
     // 1. Initialize GLFW
     if (!glfwInit())
@@ -107,11 +107,19 @@ int main()
     glfwSetScrollCallback(window, scroll);
 
     // 2. Load MuJoCo Model (Make sure to place a 'scene.xml' in your directory)
-    char error[1000] = "Could not load binary model";
-    m = mj_loadXML("scene.xml", nullptr, error, 1000);
+    
+    const char *scene_path =
+        (argc > 1) ? argv[1] : "scenes/demo1.xml";
+
+    char error[1000] = {};
+    m = mj_loadXML(scene_path, nullptr, error, sizeof(error));
+
     if (!m)
     {
-        std::cerr << "MuJoCo Load Error: " << error << std::endl;
+        std::cerr << "Could not load scene: " << scene_path
+                  << "\nMuJoCo error: " << error << '\n';
+
+        glfwDestroyWindow(window);
         glfwTerminate();
         return 1;
     }
