@@ -8,6 +8,7 @@
 #include <system_error>
 
 // MuJoCo model, simulation data, and drawing objects.
+constexpr mjtNum kExperimentDuration = 5.0;
 mjModel *m = nullptr;
 mjData *d = nullptr;
 mjvCamera cam;
@@ -20,6 +21,7 @@ bool button_left = false;
 bool button_middle = false;
 bool button_right = false;
 bool paused = true;
+bool experiment_finished = false;
 double lastx = 0.0;
 double lasty = 0.0;
 double next_reading_time = 0.0;
@@ -36,7 +38,9 @@ void keyboard(GLFWwindow *window, int key, int scancode, int act, int mods)
     }
     else if (key == GLFW_KEY_SPACE)
     {
-        paused = !paused;
+        if (experiment_finished == false) {
+            paused = !paused;
+        }
         std::cout << (paused ? "Paused\n" : "Running\n");
     }
     else if (key == GLFW_KEY_BACKSPACE && m && d)
@@ -46,6 +50,7 @@ void keyboard(GLFWwindow *window, int key, int scancode, int act, int mods)
 
         next_reading_time = 0.0;
         ++recording_run;
+        experiment_finished = false;
 
         // Reset preserves whether the simulation is paused or running.
         std::cout << "Reset: time = " << d->time
@@ -150,18 +155,22 @@ int main(int argc, char **argv)
 
     // Prepare the initial positions, including for scenes that start paused.
     mj_forward(m, d);
-    const int ball_id = mj_name2id(m, mjOBJ_BODY, "ball");
+    const int target_id = mj_name2id(m, mjOBJ_BODY, "target");
+    const int target_mocap_id =
+        target_id >= 0 ? m->body_mocapid[target_id] : -1;
 
     // 3. Open the recording file when this scene contains a ball.
     std::ofstream motion_log;
-    const char *log_path = "results/ball_motion.csv";
+    const char *log_path = "results/linear_target.csv";
 
-    if (ball_id >= 0)
+    if (target_id >= 0)
     {
-        std::cout << "Starting time: " << d->time << " s\n"
-                  << "Ball x: " << d->xpos[3 * ball_id] << " m\n"
-                  << "Ball y: " << d->xpos[3 * ball_id + 1] << " m\n"
-                  << "Ball z: " << d->xpos[3 * ball_id + 2] << " m\n";
+        std::cout << "Target body ID: " << target_id << '\n'
+                  << "Target mocap ID: " << target_mocap_id << '\n'
+                  << "Starting time: " << d->time << " s\n"
+                  << "Target x: " << d->xpos[3 * target_id] << " m\n"
+                  << "Target y: " << d->xpos[3 * target_id + 1] << " m\n"
+                  << "Target z: " << d->xpos[3 * target_id + 2] << " m\n";
 
         std::error_code folder_error;
         std::filesystem::create_directories("results", folder_error);
@@ -189,7 +198,7 @@ int main(int argc, char **argv)
     else
     {
         // Other sample scenes still work without creating or replacing a log.
-        std::cout << "No body named ball: viewing scene without ball recording.\n";
+        std::cout << "No body named target: viewing scene without target recording.\n";
     }
 
     std::cout << "Space: pause/run | Backspace: reset | Escape: close\n";
@@ -212,13 +221,19 @@ int main(int argc, char **argv)
             const mjtNum simstart = d->time;
             while (d->time - simstart < 1.0 / 60.0)
             {
-                if (ball_id >= 0 && d->time + 1e-9 >= next_reading_time)
+                if (target_id >= 0 && target_mocap_id >= 0)
+                {
+                    d->mocap_pos[3 * target_mocap_id] =
+                        -0.10 + 0.26 * d->time;
+                }
+
+                if (target_id >= 0 && d->time + 1e-9 >= next_reading_time)
                 {
                     // Read the position and time from the same simulation state.
                     mj_forward(m, d);
-                    const mjtNum x = d->xpos[3 * ball_id];
-                    const mjtNum y = d->xpos[3 * ball_id + 1];
-                    const mjtNum z = d->xpos[3 * ball_id + 2];
+                    const mjtNum x = d->xpos[3 * target_id];
+                    const mjtNum y = d->xpos[3 * target_id + 1];
+                    const mjtNum z = d->xpos[3 * target_id + 2];
 
                     std::cout << "Run: " << recording_run
                               << " | Time: " << d->time
@@ -236,6 +251,15 @@ int main(int argc, char **argv)
                     }
 
                     next_reading_time += 0.1;
+                }
+
+                if (d->time >= kExperimentDuration)
+                {
+                    experiment_finished = true;
+                    paused = true;
+                    std::cout << "Experiment finished after "
+                              << kExperimentDuration << " seconds\n";
+                    break;
                 }
 
                 mj_step(m, d);
