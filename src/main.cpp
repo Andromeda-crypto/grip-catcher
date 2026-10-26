@@ -1,6 +1,7 @@
 #include <mujoco/mujoco.h>
 #include <GLFW/glfw3.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -9,6 +10,13 @@
 
 // MuJoCo model, simulation data, and drawing objects.
 constexpr mjtNum kExperimentDuration = 5.0;
+constexpr mjtNum kTimeTolerance = 1e-9;
+constexpr mjtNum kReadingInterval = 0.1;
+constexpr mjtNum kStartX = -0.10;
+constexpr mjtNum kStartY = 0.0;
+constexpr mjtNum kTargetHeight = 0.05;
+constexpr mjtNum kVelocityX = 0.26;
+constexpr mjtNum kVelocityY = 0.12;
 mjModel *m = nullptr;
 mjData *d = nullptr;
 mjvCamera cam;
@@ -38,10 +46,15 @@ void keyboard(GLFWwindow *window, int key, int scancode, int act, int mods)
     }
     else if (key == GLFW_KEY_SPACE)
     {
-        if (experiment_finished == false) {
+        if (!experiment_finished)
+        {
             paused = !paused;
+            std::cout << (paused ? "Paused\n" : "Running\n");
         }
-        std::cout << (paused ? "Paused\n" : "Running\n");
+        else
+        {
+            std::cout << "Experiment finished. Press Backspace to reset.\n";
+        }
     }
     else if (key == GLFW_KEY_BACKSPACE && m && d)
     {
@@ -159,9 +172,9 @@ int main(int argc, char **argv)
     const int target_mocap_id =
         target_id >= 0 ? m->body_mocapid[target_id] : -1;
 
-    // 3. Open the recording file when this scene contains a ball.
+    // 3. Open the target recording file.
     std::ofstream motion_log;
-    const char *log_path = "results/linear_target.csv";
+    const char *log_path = "results/diagonal_target.csv";
 
     if (target_id >= 0)
     {
@@ -204,7 +217,7 @@ int main(int argc, char **argv)
     std::cout << "Space: pause/run | Backspace: reset | Escape: close\n";
 
     // 4. Prepare drawing.
-    mjv_defaultCamera(&cam);
+    mjv_defaultFreeCamera(m, &cam);
     mjv_defaultOption(&opt);
     mjv_defaultScene(&scn);
     mjr_defaultContext(&con);
@@ -223,11 +236,17 @@ int main(int argc, char **argv)
             {
                 if (target_id >= 0 && target_mocap_id >= 0)
                 {
+                    // Use simulation time so pause/resume does not change the path.
+                    const mjtNum trajectory_time =
+                        std::min(d->time, kExperimentDuration);
                     d->mocap_pos[3 * target_mocap_id] =
-                        -0.10 + 0.26 * d->time;
+                        kStartX + kVelocityX * trajectory_time;
+                    d->mocap_pos[3 * target_mocap_id + 1] =
+                        kStartY + kVelocityY * trajectory_time;
+                    d->mocap_pos[3 * target_mocap_id + 2] = kTargetHeight;
                 }
 
-                if (target_id >= 0 && d->time + 1e-9 >= next_reading_time)
+                if (target_id >= 0 && d->time + kTimeTolerance >= next_reading_time)
                 {
                     // Read the position and time from the same simulation state.
                     mj_forward(m, d);
@@ -237,7 +256,9 @@ int main(int argc, char **argv)
 
                     std::cout << "Run: " << recording_run
                               << " | Time: " << d->time
-                              << " s | Height: " << z << " m\n";
+                              << " s | x: " << x
+                              << " m | y: " << y
+                              << " m | z: " << z << " m\n";
 
                     motion_log << recording_run << ',' << d->time << ','
                                << x << ',' << y << ',' << z << '\n';
@@ -250,10 +271,10 @@ int main(int argc, char **argv)
                         break;
                     }
 
-                    next_reading_time += 0.1;
+                    next_reading_time += kReadingInterval;
                 }
 
-                if (d->time >= kExperimentDuration)
+                if (d->time + kTimeTolerance >= kExperimentDuration)
                 {
                     experiment_finished = true;
                     paused = true;
@@ -312,3 +333,4 @@ int main(int argc, char **argv)
 
     return exit_status;
 }
+

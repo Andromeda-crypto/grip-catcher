@@ -1,0 +1,32 @@
+<mujoco model="diagonal_target">
+  <option timestep="0.002" gravity="0 0 -9.81"/>
+  <statistic center="0.55 0.3 0.05" extent="1.7"/>
+  <visual>
+    <headlight diffuse="0.8 0.8 0.8" ambient="0.3 0.3 0.3"/>
+  </visual>
+  <asset>
+    <texture name="floor_grid" type="2d" builtin="checker"
+             rgb1="0.75 0.78 0.82" rgb2="0.9 0.92 0.94"
+             width="256" height="256"/>
+    <material name="floor_material" texture="floor_grid"
+              texrepeat="8 8" texuniform="true"/>
+  </asset>
+  <worldbody>
+    <light pos="0.5 -2 4" dir="0 0 -1"/>
+    <geom name="floor" type="plane" pos="0.55 0.3 0"
+          size="1.2 1 0.1" material="floor_material"/>
+    <geom name="path_guide" type="capsule"
+          fromto="-0.10 0 0.008 1.20 0.60 0.008" size="0.003"
+          rgba="0.25 0.3 0.35 1" contype="0" conaffinity="0"/>
+    <geom name="start_marker" type="sphere" pos="-0.10 0 0.008"
+          size="0.012" rgba="0.1 0.7 0.25 1"
+          contype="0" conaffinity="0"/>
+    <geom name="end_marker" type="sphere" pos="1.20 0.60 0.008"
+          size="0.012" rgba="0.9 0.15 0.15 1"
+          contype="0" conaffinity="0"/>
+    <body name="target" mocap="true" pos="-0.10 0 0.05">
+      <geom name="target_shape" type="sphere" size="0.02"
+            rgba="1 0.45 0.05 1" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+</mujoco>
