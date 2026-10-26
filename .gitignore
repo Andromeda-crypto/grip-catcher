@@ -1,2 +1,7 @@
 .vscode/
 build/
+
+# Temporary ESP32 bring-up project
+/bringup
+/grip-catcher-local.code-workspace
+/grip-catcher.code-workspace
